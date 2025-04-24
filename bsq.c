@@ -131,7 +131,6 @@ int parse_map(char **lines, size_t num_lines_content, int *parsed_num_lines, int
 
     char *endptr;
     long num = strtol(num_str, &endptr, 10);
-    free(num_str);
     
     if (endptr == num_str) {
         fprintf(stderr, "Error: No digits found in number string\n");
@@ -141,6 +140,7 @@ int parse_map(char **lines, size_t num_lines_content, int *parsed_num_lines, int
         fprintf(stderr, "Error: Trailing characters in number string: '%s'\n", endptr);
         return -1;
     }
+    free(num_str);
     if (num <= 0 || num > INT_MAX) {
         fprintf(stderr, "Error: Invalid number of lines %ld (must be 1-%d)\n", num, INT_MAX);
         return -1;
