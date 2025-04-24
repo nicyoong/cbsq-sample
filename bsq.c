@@ -203,3 +203,44 @@ void print_map(char **map_data, int num_lines) {
     }
     printf("\n");
 }
+
+void process_file(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        fprintf(stderr, "map error 1\n");
+        return;
+    }
+
+    size_t content_len;
+    char *content = read_file_content(file, &content_len);
+    fclose(file);
+    if (!content) {
+        fprintf(stderr, "map error 2\n");
+        return;
+    }
+
+    size_t num_lines_content;
+    char **lines = split_into_lines(content, &num_lines_content);
+    if (!lines) {
+        free(content);
+        fprintf(stderr, "map error 3\n");
+        return;
+    }
+
+    int parsed_num_lines, parsed_map_width;
+    char empty, obstacle, full;
+    char **map_data;
+
+    if (parse_map(lines, num_lines_content, &parsed_num_lines, &parsed_map_width, &empty, &obstacle, &full, &map_data) != 0) {
+        free(lines);
+        free(content);
+        fprintf(stderr, "map error 4\n");
+        return;
+    }
+
+    find_largest_square(parsed_num_lines, parsed_map_width, map_data, empty, full);
+    print_map(map_data, parsed_num_lines);
+
+    free(lines);
+    free(content);
+}
