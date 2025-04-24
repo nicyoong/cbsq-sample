@@ -38,3 +38,59 @@ char *read_file_content(FILE *file, size_t *len) {
     *len = content_size;
     return buffer;
 }
+
+char **split_into_lines(char *buffer, size_t *num_lines) {
+    if (!buffer) return NULL;
+
+    char **lines = NULL;
+    size_t capacity = 0;
+    size_t count = 0;
+    char *start = buffer;
+
+    while (*start) {
+        // Find the next line ending or end of string
+        size_t span = strcspn(start, "\r\n");
+        char *end = start + span;
+
+        // Handle line endings
+        char *next_line = end;
+        if (*next_line) {
+            // Null-terminate the current line
+            *next_line = '\0';
+            // Move past all \r and \n characters
+            do {
+                next_line++;
+            } while (*next_line == '\r' || *next_line == '\n');
+        }
+
+        // Trim trailing \r from the current line
+        size_t line_len = strlen(start);
+        if (line_len > 0 && start[line_len - 1] == '\r') {
+            start[line_len - 1] = '\0';
+            line_len--;
+        }
+
+        // Skip adding empty line ONLY if it's at the very end of the buffer
+        if (line_len == 0 && *next_line == '\0') {
+            // This is a trailing empty line caused by a final newline; skip it
+        } else {
+            // Add the line to the array
+            if (count >= capacity) {
+                size_t new_capacity = capacity == 0 ? 16 : capacity * 2;
+                char **new_lines = realloc(lines, new_capacity * sizeof(char *));
+                if (!new_lines) {
+                    free(lines);
+                    return NULL;
+                }
+                lines = new_lines;
+                capacity = new_capacity;
+            }
+            lines[count++] = start;
+        }
+
+        start = next_line;
+    }
+
+    *num_lines = count;
+    return lines;
+}
