@@ -194,3 +194,12 @@ void find_largest_square(int num_lines, int map_width, char **map_data, char emp
     }
     free(dp);
 }
+
+void print_map(char **map_data, int num_lines) {
+    if (num_lines == 0) return;
+    printf("%s", map_data[0]);
+    for (int i = 1; i < num_lines; i++) {
+        printf("\n%s", map_data[i]);
+    }
+    printf("\n");
+}
