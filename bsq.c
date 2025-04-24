@@ -96,19 +96,34 @@ char **split_into_lines(char *buffer, size_t *num_lines) {
 }
 
 int parse_map(char **lines, size_t num_lines_content, int *parsed_num_lines, int *parsed_map_width, char *empty, char *obstacle, char *full, char ***map_data) {
-    if (num_lines_content < 2) return -1;
+    fprintf(stderr, "Starting parse_map with %zu lines\n", num_lines_content);
+    
+    if (num_lines_content < 2) {
+        fprintf(stderr, "Error: Need at least 2 lines (got %zu)\n", num_lines_content);
+        return -1;
+    }
 
     char *first_line = lines[0];
     size_t first_len = strlen(first_line);
-    if (first_len < 4) return -1;
+    fprintf(stderr, "First line length: %zu\n", first_len);
+    
+    if (first_len < 4) {
+        fprintf(stderr, "Error: First line too short (need at least 4 chars, got %zu)\n", first_len);
+        return -1;
+    }
 
     char *num_str = malloc(first_len - 3 + 1);
-    if (!num_str) return -1;
+    if (!num_str) {
+        fprintf(stderr, "Error: malloc failed for num_str\n");
+        return -1;
+    }
     memcpy(num_str, first_line, first_len - 3);
     num_str[first_len - 3] = '\0';
+    fprintf(stderr, "Number string: '%s'\n", num_str);
 
     for (char *p = num_str; *p; p++) {
         if (*p < '0' || *p > '9') {
+            fprintf(stderr, "Error: Invalid character '%c' in number string\n", *p);
             free(num_str);
             return -1;
         }
@@ -117,33 +132,73 @@ int parse_map(char **lines, size_t num_lines_content, int *parsed_num_lines, int
     char *endptr;
     long num = strtol(num_str, &endptr, 10);
     free(num_str);
-    if (endptr == num_str || *endptr != '\0' || num <= 0 || num > INT_MAX) return -1;
+    
+    if (endptr == num_str) {
+        fprintf(stderr, "Error: No digits found in number string\n");
+        return -1;
+    }
+    if (*endptr != '\0') {
+        fprintf(stderr, "Error: Trailing characters in number string: '%s'\n", endptr);
+        return -1;
+    }
+    if (num <= 0 || num > INT_MAX) {
+        fprintf(stderr, "Error: Invalid number of lines %ld (must be 1-%d)\n", num, INT_MAX);
+        return -1;
+    }
 
     *parsed_num_lines = num;
     *empty = first_line[first_len - 3];
     *obstacle = first_line[first_len - 2];
     *full = first_line[first_len - 1];
+    fprintf(stderr, "Header parsed: lines=%d, empty='%c', obstacle='%c', full='%c'\n",
+           *parsed_num_lines, *empty, *obstacle, *full);
 
-    if (*empty == *obstacle || *empty == *full || *obstacle == *full) return -1;
+    if (*empty == *obstacle || *empty == *full || *obstacle == *full) {
+        fprintf(stderr, "Error: Duplicate characters in header\n");
+        return -1;
+    }
 
     size_t remaining_lines = num_lines_content - 1;
-    if (remaining_lines != (size_t)*parsed_num_lines) return -1;
+    if (remaining_lines != (size_t)*parsed_num_lines) {
+        fprintf(stderr, "Error: Line count mismatch (header:%d vs actual:%zu)\n",
+               *parsed_num_lines, remaining_lines);
+        return -1;
+    }
 
-    if (remaining_lines == 0) return -1;
+    if (remaining_lines == 0) {
+        fprintf(stderr, "Error: No map content after header\n");
+        return -1;
+    }
 
     *map_data = &lines[1];
     int map_width = strlen((*map_data)[0]);
-    if (map_width == 0) return -1;
+    fprintf(stderr, "First map line width: %d\n", map_width);
+    
+    if (map_width == 0) {
+        fprintf(stderr, "Error: First map line is empty\n");
+        return -1;
+    }
 
     for (size_t i = 0; i < remaining_lines; i++) {
-        if (strlen((*map_data)[i]) != map_width) return -1;
+        size_t current_len = strlen((*map_data)[i]);
+        if (current_len != (size_t)map_width) {
+            fprintf(stderr, "Error: Line %zu: length %zu (expected %d)\n",
+                   i+1, current_len, map_width);
+            return -1;
+        }
         for (int j = 0; j < map_width; j++) {
             char c = (*map_data)[i][j];
-            if (c != *empty && c != *obstacle) return -1;
+            if (c != *empty && c != *obstacle) {
+                fprintf(stderr, "Error: Invalid char '%c' at line %zu, col %d\n",
+                       c, i+1, j);
+                return -1;
+            }
         }
     }
 
     *parsed_map_width = map_width;
+    fprintf(stderr, "Map parsed successfully: %dx%d\n",
+           *parsed_map_width, *parsed_num_lines);
     return 0;
 }
 
