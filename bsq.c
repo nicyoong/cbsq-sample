@@ -146,3 +146,51 @@ int parse_map(char **lines, size_t num_lines_content, int *parsed_num_lines, int
     *parsed_map_width = map_width;
     return 0;
 }
+
+void find_largest_square(int num_lines, int map_width, char **map_data, char empty, char full) {
+    int **dp = malloc(num_lines * sizeof(int *));
+    for (int i = 0; i < num_lines; i++) {
+        dp[i] = malloc(map_width * sizeof(int));
+        for (int j = 0; j < map_width; j++) {
+            dp[i][j] = 0;
+        }
+    }
+
+    int max_size = 0;
+    int bi = 0, bj = 0;
+
+    for (int i = 0; i < num_lines; i++) {
+        for (int j = 0; j < map_width; j++) {
+            if (map_data[i][j] == empty) {
+                if (i == 0 || j == 0) {
+                    dp[i][j] = 1;
+                } else {
+                    int min = dp[i-1][j];
+                    if (dp[i][j-1] < min) min = dp[i][j-1];
+                    if (dp[i-1][j-1] < min) min = dp[i-1][j-1];
+                    dp[i][j] = min + 1;
+                }
+                if (dp[i][j] > max_size) {
+                    max_size = dp[i][j];
+                    bi = i;
+                    bj = j;
+                }
+            }
+        }
+    }
+
+    if (max_size > 0) {
+        int start_row = bi - max_size + 1;
+        int start_col = bj - max_size + 1;
+        for (int i = start_row; i <= bi; i++) {
+            for (int j = start_col; j <= bj; j++) {
+                map_data[i][j] = full;
+            }
+        }
+    }
+
+    for (int i = 0; i < num_lines; i++) {
+        free(dp[i]);
+    }
+    free(dp);
+}
